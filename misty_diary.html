@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Misty Diary</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Parisienne&display=swap');
+:root{
+  --bg:#aaa5a8;--panel:rgba(245,232,236,.68);--panel2:rgba(220,216,218,.58);
+  --text:#403b40;--muted:#777078;--accent:#c99da9;--accent2:#ead4da;
+  --line:rgba(80,70,76,.18);--shadow:0 18px 50px rgba(50,42,47,.12);
+}
+*{box-sizing:border-box} body{margin:0;color:var(--text);font-family:"Cormorant Garamond",Georgia,serif;
+min-height:100vh;background:linear-gradient(135deg,var(--bg),#d5ced1 52%,#9e999d);overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:
+radial-gradient(circle at 15% 20%,rgba(255,255,255,.22),transparent 28%),
+radial-gradient(circle at 80% 70%,rgba(255,210,222,.15),transparent 30%);
+z-index:-1}
+#app{max-width:1200px;margin:auto;padding:22px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 4px 20px}
+.brand{font-family:Parisienne,cursive;font-size:42px;color:#eee6e8;text-shadow:0 2px 14px #7771}
+.date{font-size:18px;color:var(--muted);text-align:right}
+nav{display:flex;gap:8px;overflow:auto;padding-bottom:12px;margin-bottom:8px}
+nav button,.btn{border:1px solid var(--line);background:rgba(255,245,248,.38);color:var(--text);
+padding:10px 14px;border-radius:16px;cursor:pointer;font:inherit;transition:.25s}
+nav button:hover,.btn:hover{transform:translateY(-2px);background:rgba(255,245,248,.7)}
+nav button.active{background:var(--accent2);box-shadow:var(--shadow)}
+.page{display:none}.page.active{display:block;animation:fade .45s}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{grid-column:span 6;background:var(--panel);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.35);
+border-radius:24px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card.wide{grid-column:span 12}.card.third{grid-column:span 4}
+h1,h2,h3{margin:0 0 8px;font-weight:500}.title{font-family:Parisienne,cursive;font-size:31px;color:#6c5860}
+.small{font-size:15px;color:var(--muted)}.quote{font-size:22px;line-height:1.25}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.4);
+padding:11px;color:var(--text);font:inherit;font-size:16px;outline:none}textarea{min-height:100px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row .fit{flex:0 0 auto}
+.list{list-style:none;padding:0;margin:12px 0}.list li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.list li:last-child{border-bottom:0}.check{width:20px;height:20px;accent-color:var(--accent)}
+.pill{display:inline-block;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.4);margin:3px;font-size:14px}
+.moodgrid,.energygrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:10px}
+.moodgrid button,.energygrid button{border:1px solid var(--line);background:#fff5;border-radius:15px;padding:9px 4px;color:var(--text);cursor:pointer;font:inherit}
+.selected{background:var(--accent2)!important;outline:2px solid #c99da955}
+.pin{height:220px;border-radius:18px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;
+overflow:hidden;background:#fff3;margin-top:10px}.pin img{width:100%;height:100%;object-fit:cover}.pin span{color:var(--muted)}
+.stat{font-size:30px}.archive{max-height:420px;overflow:auto}.day{padding:12px;border-bottom:1px solid var(--line)}
+.day strong{font-size:19px}.danger{background:#8d677044}.footer{text-align:center;color:var(--muted);padding:30px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(30px);opacity:0;
+background:#4f474c;color:#fff;padding:10px 18px;border-radius:99px;transition:.3s;z-index:10}
+#toast.show{opacity:1;transform:translateX(-50%)}
+@media(max-width:760px){#app{padding:14px}.brand{font-size:34px}.card,.card.third{grid-column:span 12}.moodgrid,.energygrid{grid-template-columns:repeat(5,1fr)}}
+</style>
+</head>
+<body>
+<div id="app">
+<header><div class="brand">Misty Diary</div><div class="date" id="today"></div></header>
+<nav id="nav">
+<button data-page="home" class="active">Bugün</button><button data-page="plan">Plan</button>
+<button data-page="self">Kendim</button><button data-page="life">Yaşam</button>
+<button data-page="archive">Arşiv</button><button data-page="settings">Temalar</button>
+</nav>
+
+<section class="page active" id="home">
+<div class="grid">
+<div class="card wide"><div class="title">Bugünün özeti</div><div id="summary" class="quote">Bugününü nasıl geçirmek istediğini seç.</div></div>
+<div class="card"><h2>Enerjim</h2><div class="energygrid" id="energy"></div></div>
+<div class="card"><h2>Modum</h2><div class="moodgrid" id="moods"></div></div>
+<div class="card"><h2>Bugünün müziği</h2><div class="row"><input id="song" placeholder="Şarkı adı — sanatçı"><button class="btn fit" onclick="saveSong()">Kaydet</button></div><div id="songShow" class="small"></div></div>
+<div class="card"><h2>Günün nadir bilgisi</h2><div id="fact" class="quote"></div></div>
+<div class="card"><h2>Bugün bir hobi edin</h2><div id="hobby" class="quote"></div><button class="btn" onclick="newHobby()">Başka öner</button> <button class="btn" onclick="completeHobby()">Yaptım</button></div>
+<div class="card"><h2>Günün pini</h2><input id="pinInput" type="file" accept="image/*" onchange="setPin(event)"><div class="pin" id="pin"><span>Bugüne ait bir görsel seç</span></div></div>
+<div class="card"><h2>Moduma göre program</h2><div id="program" class="quote"></div></div>
+</div></section>
+
+<section class="page" id="plan"><div class="grid">
+<div class="card wide"><div class="title">Bugünün planı</div><textarea id="dayPlan" placeholder="Bugün yapmak istediklerini yaz..."></textarea><button class="btn" onclick="savePlan()">Planı kaydet</button></div>
+<div class="card wide"><h2>To-do</h2><div class="row"><input id="todoInput" placeholder="Yeni görev"><button class="btn fit" onclick="addTodo()">Ekle</button></div><ul class="list" id="todos"></ul></div>
+</div></section>
+
+<section class="page" id="self"><div class="grid">
+<div class="card"><h2>Asla unutma</h2><textarea id="never" placeholder="Burada kalmasını istediğin şeyler..."></textarea><button class="btn" onclick="saveNever()">Kaydet</button></div>
+<div class="card"><h2>Hobilerim</h2><div class="row"><input id="hobbyInput" placeholder="Yeni hobi"><button class="btn fit" onclick="addHobby()">Ekle</button></div><ul class="list" id="hobbies"></ul></div>
+<div class="card"><h2>Spor</h2><input id="sportName" placeholder="Ne yaptın?"><input id="sportMin" type="number" min="0" placeholder="Kaç dakika?"><button class="btn" onclick="addSport()">Kaydet</button><div id="sportToday" class="small"></div></div>
+<div class="card"><h2>Bugünkü enerji özeti</h2><div id="energySummary" class="quote"></div></div>
+</div></section>
+
+<section class="page" id="life"><div class="grid">
+<div class="card wide"><div class="title">Evde bunlar var</div><textarea id="ingredients" placeholder="Malzemeleri virgülle yaz: yumurta, süt, un, patates..."></textarea><button class="btn" onclick="findRecipes()">Tarif öner</button><div id="recipes"></div></div>
+<div class="card wide"><h2>Arka plan görseli</h2><input type="file" accept="image/*" onchange="setBackground(event)"><p class="small">Seçtiğin görsel bu cihazda saklanır ve site arka planına uygulanır.</p><button class="btn" onclick="clearBackground()">Arka planı sıfırla</button></div>
+</div></section>
+
+<section class="page" id="archive"><div class="grid">
+<div class="card third"><h2>Bugün</h2><div class="stat" id="statTasks">0</div><div class="small">tamamlanan görev</div></div>
+<div class="card third"><h2>Spor</h2><div class="stat" id="statSport">0</div><div class="small">dakika</div></div>
+<div class="card third"><h2>Hobiler</h2><div class="stat" id="statHobby">0</div><div class="small">tamamlanan</div></div>
+<div class="card wide"><h2>Geçmiş günler</h2><div class="archive" id="archiveList"></div></div>
+</div></section>
+
+<section class="page" id="settings"><div class="grid">
+<div class="card"><h2>Tema</h2><div class="row"><button class="btn" onclick="theme('mist')">Misty Pink</button><button class="btn" onclick="theme('grey')">Grey Doll</button><button class="btn" onclick="theme('dark')">Dark Lace</button></div></div>
+<div class="card"><h2>Yazı</h2><p class="small">Başlıklarda yumuşak, romantik bir el yazısı; içerikte okunabilir serif kullanılıyor.</p></div>
+<div class="card wide"><h2>Veriler</h2><p class="small">Kayıtlar yalnızca bu tarayıcıda tutulur. Tarayıcı verileri temizlenirse kayıtlar da silinebilir.</p><button class="btn danger" onclick="clearAll()">Tüm verileri sil</button></div>
+</div></section>
+<div class="footer">Misty Diary · bugününü yavaşça yaşa</div>
+</div><div id="toast"></div>
+
+<script>
+const key='mistyDiaryV1', todayKey=new Date().toISOString().slice(0,10);
+const facts=[
+"Bir bulutun ortalama ağırlığı yaklaşık bir milyon pound olabilir.",
+"Venüs'te bir gün, Venüs'ün bir Güneş yılına göre daha uzundur.",
+"Oxford Üniversitesi, Aztek İmparatorluğu'ndan daha eskidir.",
+"Denizatı türlerinde yavruları taşıyan taraf erkeklerdir.",
+"Bir insanın kalbi günde yaklaşık yüz bin kez atabilir.",
+"Satürn'ün yoğunluğu sudan düşüktür; yeterince büyük bir okyanus olsaydı yüzebilirdi."
+];
+const hobbies=["5 dakika serbest çizim yap","Bir şarkıyı sözlerine bakmadan dinle","Yeni bir kelime öğren","10 dakika kitap oku","Eski bir fotoğrafı düzenle","Kısa bir şiir yaz","Bir origami modeli dene","Odanın küçük bir köşesini yeniden düzenle"];
+const moods=["Huzurlu","Yorgun","Mutlu","Gergin","Boş"];
+const energies=["Çok düşük","Düşük","Orta","İyi","Çok iyi"];
+let db=JSON.parse(localStorage.getItem(key)||'{}'); if(!db.days)db.days={}; if(!db.hobbies)db.hobbies=[];
+let d=db.days[todayKey]||{todos:[],plan:"",song:"",energy:"",mood:"",pin:"",sport:[],hobby:"",hobbyDone:false};
+db.days[todayKey]=d;
+
+function save(){db.days[todayKey]=d;localStorage.setItem(key,JSON.stringify(db));}
+function toast(t){let x=document.getElementById('toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),1700)}
+function $(id){return document.getElementById(id)}
+function init(){
+ $('today').textContent=new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ $('fact').textContent=facts[new Date().getDate()%facts.length];
+ $('hobby').textContent=d.hobby||hobbies[new Date().getDate()%hobbies.length];
+ $('dayPlan').value=d.plan||'';$('never').value=db.never||'';
+ renderEnergy();renderMoods();renderTodos();renderHobbies();renderSport();renderSummary();renderArchive();applyBackground();
+ if(d.song)$('songShow').textContent='Bugünün şarkısı: '+d.song;
+}
+function renderEnergy(){$('energy').innerHTML=energies.map(x=>`<button class="${d.energy===x?'selected':''}" onclick="setEnergy('${x}')">${x}</button>`).join('')}
+function setEnergy(x){d.energy=x;save();renderEnergy();renderProgram();renderSummary();renderEnergySummary()}
+function renderMoods(){$('moods').innerHTML=moods.map(x=>`<button class="${d.mood===x?'selected':''}" onclick="setMood('${x}')">${x}</button>`).join('')}
+function setMood(x){d.mood=x;save();renderMoods();renderProgram();renderSummary()}
+function renderProgram(){
+let p={Yorgun:"Önce temel ihtiyaçların: su iç, kısa bir mola ver ve yalnızca 1 önemli görev seç. Sonra hafif bir hobi.",
+"Çok düşük":"Bugünü yavaşlat. Bir zorunlu iş + dinlenme + küçük bir keyif aktivitesi yeterli.",
+"Gergin":"Önce 10 dakika sakinleş. Sonra işleri küçük parçalara böl ve en kolayından başla.",
+"Huzurlu":"Sakinliğini koruyacak bir plan yap: önemli iş, kısa hareket ve sevdiğin bir şey.",
+"Mutlu":"Enerjini kullan: en önemli görevi tamamla, sonra sevdiğin bir aktiviteye geç.",
+"Boş":"Küçük bir başlangıç seç: duş, oda toparlama veya 10 dakikalık bir hobi."};
+$('program').textContent=p[d.mood]||"Önce modunu seç; sana bugüne uygun küçük bir program önereceğim.";
+}
+function renderSummary(){$('summary').textContent=d.mood&&d.energy?`Bugün ${d.mood.toLowerCase()} ve enerjin ${d.energy.toLowerCase()}. Programın buna göre ayarlandı.`:"Bugünün modunu ve enerjini seçerek başlayabilirsin."}
+function renderEnergySummary(){$('energySummary').textContent=d.energy?`Bugünkü enerji: ${d.energy}.`:"Henüz seçilmedi."}
+function savePlan(){d.plan=$('dayPlan').value;save();toast('Plan kaydedildi.')}
+function addTodo(){let v=$('todoInput').value.trim();if(!v)return;d.todos.push({t:v,done:false});$('todoInput').value='';save();renderTodos()}
+function renderTodos(){$('todos').innerHTML=d.todos.map((x,i)=>`<li><input class="check" type="checkbox" ${x.done?'checked':''} onchange="toggleTodo(${i})"><span style="${x.done?'text-decoration:line-through':''}">${esc(x.t)}</span><button class="btn fit" onclick="delTodo(${i})">×</button></li>`).join('')||'<li class="small">Henüz görev yok.</li>'; $('statTasks').textContent=d.todos.filter(x=>x.done).length}
+function toggleTodo(i){d.todos[i].done=!d.todos[i].done;save();renderTodos()}
+function delTodo(i){d.todos.splice(i,1);save();renderTodos()}
+function saveSong(){d.song=$('song').value.trim();save();$('songShow').textContent=d.song?'Bugünün şarkısı: '+d.song:'';toast('Müzik kaydedildi.')}
+function newHobby(){$('hobby').textContent=hobbies[Math.floor(Math.random()*hobbies.length)]}
+function completeHobby(){d.hobby=$('hobby').textContent;d.hobbyDone=true;save();renderArchive();toast('Hobi günlüğe eklendi.')}
+function addHobby(){let v=$('hobbyInput').value.trim();if(!v)return;db.hobbies.push(v);save();$('hobbyInput').value='';renderHobbies()}
+function renderHobbies(){$('hobbies').innerHTML=db.hobbies.map((x,i)=>`<li>${esc(x)}<button class="btn fit" onclick="db.hobbies.splice(${i},1);save();renderHobbies()">×</button></li>`).join('')||'<li class="small">Henüz hobi eklenmedi.</li>'}
+function addSport(){let n=$('sportName').value.trim(),m=Number($('sportMin').value);if(!n||!m)return;d.sport.push({name:n,min:m});$('sportName').value='';$('sportMin').value='';save();renderSport();renderArchive();toast('Spor kaydedildi.')}
+function renderSport(){$('sportToday').innerHTML=d.sport.map(x=>`${esc(x.name)} — ${x.min} dk`).join('<br>')||'Bugün henüz spor kaydı yok.'}
+function saveNever(){db.never=$('never').value;save();toast('Asla Unutma kaydedildi.')}
+function setPin(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{d.pin=r.result;save();renderPin()};r.readAsDataURL(f)}
+function renderPin(){$('pin').innerHTML=d.pin?`<img src="${d.pin}">`:'<span>Bugüne ait bir görsel seç</span>'}
+function setBackground(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{db.bg=r.result;save();applyBackground();toast('Arka plan değiştirildi.')};r.readAsDataURL(f)}
+function applyBackground(){if(db.bg)document.body.style.backgroundImage=`linear-gradient(135deg,rgba(175,165,171,.66),rgba(220,205,212,.55)),url("${db.bg}")`;else document.body.style.backgroundImage=''}
+function clearBackground(){delete db.bg;save();applyBackground()}
+function findRecipes(){
+let a=$('ingredients').value.toLowerCase();let out=[];
+if(a.includes('yumurta')&&a.includes('patates'))out.push('Patatesli yumurta');
+if(a.includes('yumurta')&&a.includes('un'))out.push('Basit krep');
+if(a.includes('süt')&&a.includes('un')&&a.includes('yumurta'))out.push('Sütlü krep / pankek');
+if(a.includes('makarna'))out.push('Yoğurtlu veya salçalı makarna');
+if(a.includes('pirinç'))out.push('Sebzeli pilav');
+if(!out.length)out=['Malzemelerini biraz daha ayrıntılı yaz; örneğin “yumurta, peynir, ekmek”.'];
+$('recipes').innerHTML='<ul class="list">'+out.map(x=>`<li>${x}</li>`).join('')+'</ul><p class="small">Not: Tarif önerileri evdeki malzemelere göre basit eşleştirmelerdir; miktarları ve alerjenleri ayrıca kontrol et.</p>';
+}
+function theme(t){
+if(t==='mist'){document.documentElement.style.setProperty('--bg','#aaa5a8');document.documentElement.style.setProperty('--accent','#c99da9');document.documentElement.style.setProperty('--accent2','#ead4da')}
+if(t==='grey'){document.documentElement.style.setProperty('--bg','#9e9da0');document.documentElement.style.setProperty('--accent','#b8b4b7');document.documentElement.style.setProperty('--accent2','#d9d6d8')}
+if(t==='dark'){document.documentElement.style.setProperty('--bg','#555158');document.documentElement.style.setProperty('--accent','#9b737e');document.documentElement.style.setProperty('--accent2','#b999a1')}
+}
+function renderArchive(){
+let days=Object.entries(db.days).sort((a,b)=>b[0].localeCompare(a[0]));
+$('archiveList').innerHTML=days.map(([date,x])=>`<div class="day"><strong>${date}</strong><br><span class="small">Mod: ${x.mood||'—'} · Enerji: ${x.energy||'—'} · Görev: ${x.todos.filter(t=>t.done).length} · Spor: ${x.sport.reduce((s,z)=>s+z.min,0)} dk · Müzik: ${esc(x.song||'—')}</span></div>`).join('');
+$('statSport').textContent=d.sport.reduce((s,x)=>s+x.min,0);$('statHobby').textContent=d.hobbyDone?1:0;renderPin();
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function clearAll(){if(confirm('Bu cihazdaki tüm Misty Diary verileri silinsin mi?')){localStorage.removeItem(key);location.reload()}}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(b.dataset.page).classList.add('active');if(b.dataset.page==='archive')renderArchive()});
+renderProgram();init();
+</script>
+</body></html>
